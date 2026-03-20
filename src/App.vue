@@ -43,10 +43,14 @@ export default {
   mounted(){
     this.obtieneUltimoFolio();
     console.log("%c%s", "background: linear-gradient(0deg, #026000 0%, #27b100 100%);margin: 10px;padding: 10px;color: white;text-align: center;", `Control Exter v. ${this.appVersion}`)
+    window.addEventListener("beforeunload", this.handleBeforeUnload);
+  },
+  beforeUnmount() {
+    window.removeEventListener("beforeunload", this.handleBeforeUnload);
   },
   data() {
     return {
-      appVersion: '0.3.0',
+      appVersion: '0.4.0',
       res: '',
       folioInicial: "" as string,
       listaCerts: "",
@@ -295,6 +299,12 @@ export default {
         console.log(e);
       })
     },
+    handleBeforeUnload(event: BeforeUnloadEvent) {
+      if (this.hayCambiosSinGuardar) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    },
   },
   computed: {
     spanStyle() {
@@ -303,6 +313,18 @@ export default {
         // Add more style properties as needed
       };
     },
+    hayCambiosSinGuardar(): boolean {
+      if (this.listaCerts && this.listaCerts.trim() !== '') return true;
+      if (this.dataCerts && this.dataCerts.length > 0) return true;
+      if (this.dataCamposComunes.cliente.trim() !== '' || 
+          this.dataCamposComunes.domicilio.trim() !== '' || 
+          this.dataCamposComunes.localidad.trim() !== '' || 
+          this.dataCamposComunes.fecha.trim() !== '' || 
+          this.dataCamposComunes.areas.trim() !== '') {
+        return true;
+      }
+      return false;
+    }
   },
 };
 </script>
@@ -310,8 +332,9 @@ export default {
 <template>
   <header>
     <img src="./assets/controlExter_logo.svg" alt="" id="logo">
-    <div>
+    <div class="header-titles">
       <h1>Generador de Certificados <span :style="spanStyle">⬤</span></h1>
+      <span class="app-version">v. {{ appVersion }}</span>
     </div>
   </header>
 
@@ -375,6 +398,16 @@ header{
   display: flex;
   justify-content: space-between;
   margin-bottom: 50px;
+}
+
+.header-titles {
+  text-align: right;
+}
+
+.app-version {
+  font-size: 0.8rem;
+  color: #888;
+  opacity: 0.7;
 }
 
 #logo{margin: 0;}
