@@ -8,22 +8,7 @@ const run = (comando) => {
   execSync(comando, { stdio: 'inherit' });
 };
 
-// Cargar variables de entorno desde el archivo .env si existe
-const envPath = path.resolve('.env');
-if (existsSync(envPath)) {
-  const envFile = readFileSync(envPath, 'utf8');
-  envFile.split('\n').forEach((line) => {
-    const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
-    if (match) {
-      const key = match[1];
-      let value = match[2] || '';
-      if (value.startsWith('"') && value.endsWith('"')) {
-        value = value.slice(1, -1);
-      }
-      process.env[key] = value;
-    }
-  });
-}
+
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 

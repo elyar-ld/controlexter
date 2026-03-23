@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vue-tsc && vite build",
     "preview": "vite preview",
-    "deploy": "node deploy.js"
+    "deploy": "node --env-file=.env.production deploy.js"
   },
   "dependencies": {
     "@mdi/font": "^7.0.96",
