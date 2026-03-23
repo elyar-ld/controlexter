@@ -44,9 +44,14 @@ export default {
     this.obtieneUltimoFolio();
     console.log("%c%s", "background: linear-gradient(0deg, #026000 0%, #27b100 100%);margin: 10px;padding: 10px;color: white;text-align: center;", `Control Exter v. ${this.appVersion}`)
     window.addEventListener("beforeunload", this.handleBeforeUnload);
+    
+    // PWA Back button trap
+    history.pushState(null, '', location.href);
+    window.addEventListener("popstate", this.handlePopState);
   },
   beforeUnmount() {
     window.removeEventListener("beforeunload", this.handleBeforeUnload);
+    window.removeEventListener("popstate", this.handlePopState);
   },
   data() {
     return {
@@ -303,6 +308,21 @@ export default {
       if (this.hayCambiosSinGuardar) {
         event.preventDefault();
         event.returnValue = '';
+      }
+    },
+    handlePopState(event: PopStateEvent) {
+      if (this.hayCambiosSinGuardar) {
+        const confirmar = confirm("Tienes cambios sin guardar. ¿Estás seguro de que deseas salir y perderlos?");
+        if (!confirmar) {
+          // Volvemos a empujar el estado para seguir atrapando el botón "Atrás"
+          history.pushState(null, '', location.href);
+        } else {
+          // Lo dejamos salir simulando otro back que lo sacará de la app
+          history.back();
+        }
+      } else {
+        // No hay cambios, lo dejamos salir
+        history.back();
       }
     },
   },
