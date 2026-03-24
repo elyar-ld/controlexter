@@ -1,6 +1,7 @@
 import { execSync } from 'child_process';
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
+import readline from 'readline';
 
 // Función para ejecutar comandos de consola
 const run = (comando) => {
@@ -8,13 +9,25 @@ const run = (comando) => {
   execSync(comando, { stdio: 'inherit' });
 };
 
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
+rl.question('¿Estás seguro de que deseas desplegar a producción? Escribe "deploy" para confirmar: ', (answer) => {
+  if (answer.trim().toLowerCase() !== 'deploy') {
+    console.log('❌ Despliegue cancelado.');
+    rl.close();
+    process.exit(0);
+  }
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+  rl.close();
 
-try {
-  console.log('Construyendo el proyecto...');
-  run('npm run build');
+  const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+
+  try {
+    console.log('Construyendo el proyecto...');
+    run('npm run build');
 
   console.log('\nNavegando a la carpeta dist...');
   const distPath = path.resolve('dist');
@@ -35,7 +48,8 @@ try {
   }
 
   console.log('\n¡Despliegue completado con éxito!');
-} catch (error) {
-  console.error('\nOcurrió un error durante el despliegue:', error.message);
-  process.exit(1);
-}
+  } catch (error) {
+    console.error('\nOcurrió un error durante el despliegue:', error.message);
+    process.exit(1);
+  }
+});
