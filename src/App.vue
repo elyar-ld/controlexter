@@ -125,7 +125,8 @@ export default {
     },
     obtieneInfoCerts() {
       if (this.listaCerts === "") return;
-      let getUrl = apiBaseUrl + '/appscript/getdata';
+      //let getUrl = apiBaseUrl + '/appscript/getdata';
+      let getUrl = apiBaseUrl + '/api/certificados/getdata';
       let encodedData = JSON.stringify(this.prepararBusqueda(this.listaCerts));
       encodedData = encodeURIComponent(encodedData.replaceAll('\\"',''));
       const urlWithParams = getUrl + "?data=" + encodedData;
@@ -227,7 +228,8 @@ export default {
         };
         const dataString = { "url": `https://extercontrol.github.io/wa/validador/index.html?hash=${hash}` };
 
-        let postUrl = apiBaseUrl + '/appscript/shorturl';
+        //let postUrl = apiBaseUrl + '/appscript/shorturl';
+        let postUrl = apiBaseUrl + '/api/certificados/shorturl';
         await axios.post(postUrl, dataString, {
           headers: {
             'Access-Control-Allow-Origin': '*',
@@ -236,7 +238,18 @@ export default {
           },
         }).then(response => {
           console.log(response.data);
-          certificadosARegistrar.push([hash, cert.folio, cert.cliente, cert.domicilio, cert.localidad, cert.fecha, texto.toUpperCase(), cert.areas, timestamp, response.data.data.tiny_url]);//data.link]);
+          certificadosARegistrar.push({
+            hash: hash,
+            folio: cert.folio,
+            cliente: cert.cliente,
+            domicilio: cert.domicilio,
+            localidad: cert.localidad,
+            fecha: cert.fecha,
+            tratamiento: texto.toUpperCase(),
+            areas: cert.areas,
+            timestamp: timestamp,
+            bitly: response.data.data.tiny_url
+          });
           console.log(response.data.data.tiny_url)
         }).catch(e => {
           console.log(e);
@@ -245,12 +258,9 @@ export default {
       }
       console.log(JSON.stringify(certificadosARegistrar));
 
-      let postUrl = apiBaseUrl + '/appscript/submitdata';
-      let encodedData = JSON.stringify(certificadosARegistrar);
-      encodedData = encodeURIComponent(encodedData.replaceAll('\\"',''));
-      const urlWithParams = postUrl + "?data=" + encodedData;
-      console.log(urlWithParams);
-      axios.post(urlWithParams, {}, {
+      //let postUrl = apiBaseUrl + '/appscript/submitdata';
+      let postUrl = apiBaseUrl + '/api/certificados';
+      axios.post(postUrl, certificadosARegistrar, {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Credentials': 'true',
@@ -258,7 +268,7 @@ export default {
         },
       }).then(response => {
         for (let cert of certificadosARegistrar) {
-          this.creaDocumento({ folio: cert[1], cliente: cert[2], domicilio: cert[3], localidad: cert[4], fecha: cert[5], tratamiento: cert[6], areas: cert[7], short_url: cert[9] });
+          this.creaDocumento({ folio: cert.folio, cliente: cert.cliente, domicilio: cert.domicilio, localidad: cert.localidad, fecha: cert.fecha, tratamiento: cert.tratamiento, areas: cert.areas, short_url: cert.bitly });
         }
         console.log(response.data);
       }).catch(e => {
@@ -284,11 +294,12 @@ export default {
         reader.onload = () => {
           resolve(reader.result as string);
         };
-        reader.readAsDataURL(blobQr!);
+        reader.readAsDataURL(blobQr as Blob);
       });
     },
     obtieneUltimoFolio() {
-      let getUrl = apiBaseUrl + '/appscript/getlast';
+      //let getUrl = apiBaseUrl + '/appscript/getlast';
+      let getUrl = apiBaseUrl + '/api/certificados/last/record';
       axios.get(getUrl, {
         headers: {
           'Access-Control-Allow-Origin': '*',

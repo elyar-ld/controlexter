@@ -4,5 +4,5 @@ import vue from '@vitejs/plugin-vue'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
-  base: '/control-exter/',
+  base: process.env.DEPLOY_GH_PAGES === 'true' ? '/control-exter/' : '/',
 })

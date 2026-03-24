@@ -4,9 +4,9 @@ import path from 'path';
 import readline from 'readline';
 
 // Función para ejecutar comandos de consola
-const run = (comando) => {
+const run = (comando, options = {}) => {
   console.log(`\n> ${comando}`);
-  execSync(comando, { stdio: 'inherit' });
+  execSync(comando, { stdio: 'inherit', ...options });
 };
 
 const rl = readline.createInterface({
@@ -27,7 +27,7 @@ rl.question('¿Estás seguro de que deseas desplegar a producción? Escribe "dep
 
   try {
     console.log('Construyendo el proyecto...');
-    run('npm run build');
+    run('npm run build', { env: { ...process.env, DEPLOY_GH_PAGES: 'true' } });
 
   console.log('\nNavegando a la carpeta dist...');
   const distPath = path.resolve('dist');
