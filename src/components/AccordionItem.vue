@@ -32,7 +32,12 @@
               <label for="localidad">Localidad: </label> <input type="text" :id="'localidad' + folio" :value="localidad" @input="(event) => $emit('update:localidad', event.target.value)">
             </div>
             <div class="named-field">
-              <label for="fecha">Fecha: </label> <input type="text" :id="'fecha-' + folio" :value="fecha" @input="(event) => $emit('update:fecha', event.target.value)">
+              <label for="fecha">Fecha: </label>
+              <div style="display: inline-flex; gap: 5px; align-items: center;">
+                <input type="date" :id="'fecha-inicio-' + folio" v-model="fechaInicioDate">
+                <span>AL</span>
+                <input type="date" :id="'fecha-fin-' + folio" v-model="fechaFinDate">
+              </div>
             </div>
             <div class="named-field">
               <label for="tipo_tratamiento">Tipo de tratamiento:</label>
@@ -122,8 +127,13 @@
         index: null,
         innerTipoTratamiento: this.tipoTratamiento,
         innerProductosSelected: this.productosSelected,
+        fechaInicioDate: "",
+        fechaFinDate: "",
         lista_productos
       };
+    },
+    mounted() {
+      this.parseFechaProp(this.fecha);
     },
     computed: {
       visible() {
@@ -144,6 +154,37 @@
       end(el) {
         el.style.height = "";
       },
+      parseFechaProp(fechaStr) {
+        if (fechaStr && fechaStr.includes(" AL ")) {
+          const partes = fechaStr.split(" AL ");
+          if (partes.length === 2) {
+            this.fechaInicioDate = this.toYYYYMMDD(partes[0].trim());
+            this.fechaFinDate = this.toYYYYMMDD(partes[1].trim());
+          }
+        }
+      },
+      toYYYYMMDD(dateStr) {
+        if(!dateStr) return "";
+        const p = dateStr.split('-');
+        if (p.length === 3) {
+          return `${p[2]}-${p[1]}-${p[0]}`;
+        }
+        return dateStr;
+      },
+      toDDMMYYYY(dateStr) {
+        if(!dateStr) return "";
+        const p = dateStr.split('-');
+        if (p.length === 3) {
+          return `${p[2]}-${p[1]}-${p[0]}`;
+        }
+        return dateStr;
+      },
+      updateFechaStr() {
+        if (this.fechaInicioDate && this.fechaFinDate) {
+          const newFecha = `${this.toDDMMYYYY(this.fechaInicioDate)} AL ${this.toDDMMYYYY(this.fechaFinDate)}`;
+          this.$emit('update:fecha', newFecha);
+        }
+      }
     },
     created() {
       this.index = this.Accordion.count++;
@@ -155,6 +196,15 @@
         console.log(this.innerProductosSelected, this.tipoTratamiento);
         this.$emit('productosSeleccionadosChanged', this.innerProductosSelected.map(x => this.lista_productos[this.tipoTratamiento][x]));
       },
+      fecha: function(newVal) {
+        this.parseFechaProp(newVal);
+      },
+      fechaInicioDate: function() {
+        this.updateFechaStr();
+      },
+      fechaFinDate: function() {
+        this.updateFechaStr();
+      }
     }
   };
   </script>

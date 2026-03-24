@@ -26,7 +26,12 @@
           </div>
           <div class="named-field">
             <label for="fecha"><input type="checkbox" id="fecha-checkbox" value="fecha" v-model="camposSeleccionados">Fecha:
-            </label> <input type="text" id="fecha" v-model="valoresCampos.fecha">
+            </label> 
+            <div style="display: inline-flex; gap: 5px; align-items: center;">
+              <input type="date" id="fecha-inicio" v-model="fechaInicioDate">
+              <span>AL</span>
+              <input type="date" id="fecha-fin" v-model="fechaFinDate">
+            </div>
           </div>
           <div class="named-field">
             <label for="tipo_tratamiento"><input type="checkbox" id="productos-checkbox" value="productos"
@@ -110,6 +115,8 @@ export default {
         tipoTratamiento: "",
         dosis: "",
       },
+      fechaInicioDate: "",
+      fechaFinDate: "",
       lista_productos
     };
   },
@@ -121,6 +128,7 @@ export default {
   mounted() {
     this.valoresCampos.tipoTratamiento = (' ' + this.tipo_tratamiento).slice(1);
     this.valoresCampos.fecha = this.getDates();
+    this.parseFechaProp();
   },
   methods: {
     open() {
@@ -153,6 +161,42 @@ export default {
 
       console.log(rangoFechas);
       return rangoFechas;
+    },
+    parseFechaProp() {
+      // Intenta parsear DD-MM-YYYY AL DD-MM-YYYY
+      if (this.valoresCampos.fecha && this.valoresCampos.fecha.includes(" AL ")) {
+        const partes = this.valoresCampos.fecha.split(" AL ");
+        if (partes.length === 2) {
+          this.fechaInicioDate = this.toYYYYMMDD(partes[0].trim());
+          this.fechaFinDate = this.toYYYYMMDD(partes[1].trim());
+        }
+      }
+    },
+    toYYYYMMDD(dateStr) {
+      if(!dateStr) return "";
+      const p = dateStr.split('-');
+      if (p.length === 3) {
+        // Asumiendo DD-MM-YYYY
+        return `${p[2]}-${p[1]}-${p[0]}`;
+      }
+      return dateStr;
+    },
+    toDDMMYYYY(dateStr) {
+      if(!dateStr) return "";
+      const p = dateStr.split('-');
+      if (p.length === 3) {
+        // Asumiendo YYYY-MM-DD
+        return `${p[2]}-${p[1]}-${p[0]}`;
+      }
+      return dateStr;
+    },
+    updateFechaStr() {
+      if (this.fechaInicioDate && this.fechaFinDate) {
+        this.valoresCampos.fecha = `${this.toDDMMYYYY(this.fechaInicioDate)} AL ${this.toDDMMYYYY(this.fechaFinDate)}`;
+        if (this.camposSeleccionados.includes('fecha')) {
+            this.$emit('camposSeleccionadosChanged', { campos: this.camposSeleccionados, valores: this.valoresCampos });
+        }
+      }
     }
   },
   created() {
@@ -162,6 +206,12 @@ export default {
     camposSeleccionados: function () {
       this.valoresCampos.productos = this.valoresCampos.productosSelected.map(x => this.lista_productos[this.valoresCampos.tipoTratamiento][x]);
       this.$emit('camposSeleccionadosChanged', { campos: this.camposSeleccionados, valores: this.valoresCampos });
+    },
+    fechaInicioDate: function () {
+      this.updateFechaStr();
+    },
+    fechaFinDate: function () {
+      this.updateFechaStr();
     }
   }
 };
