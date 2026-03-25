@@ -226,7 +226,8 @@ export default {
           "Content-Type": "application/json",
           'Access-Control-Allow-Credentials': true
         };
-        const dataString = { "url": `https://extercontrol.github.io/wa/validador/index.html?hash=${hash}` };
+        //const dataString = { "url": `https://extercontrol.github.io/wa/validador/index.html?hash=${hash}` };
+        const dataString = { "url": `https://validador.extercontrol.com/?hash=${hash}` };
 
         //let postUrl = apiBaseUrl + '/appscript/shorturl';
         let postUrl = apiBaseUrl + '/api/certificados/shorturl';
