@@ -132,7 +132,7 @@ export default {
       const urlWithParams = getUrl + "?data=" + encodedData;
       console.log(urlWithParams);
       axios.get(urlWithParams, {
-        withCredentials: true,
+        
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Credentials': 'true',
@@ -233,7 +233,7 @@ export default {
         //let postUrl = apiBaseUrl + '/appscript/shorturl';
         let postUrl = apiBaseUrl + '/api/certificados/shorturl';
         await axios.post(postUrl, dataString, {
-          withCredentials: true,
+          
           headers: {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Credentials': 'true',
@@ -264,7 +264,7 @@ export default {
       //let postUrl = apiBaseUrl + '/appscript/submitdata';
       let postUrl = apiBaseUrl + '/api/certificados';
       axios.post(postUrl, certificadosARegistrar, {
-        withCredentials: true,
+        
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Credentials': 'true',
@@ -305,7 +305,7 @@ export default {
       //let getUrl = apiBaseUrl + '/appscript/getlast';
       let getUrl = apiBaseUrl + '/api/certificados/last/record';
       axios.get(getUrl, {
-        withCredentials: true,
+        
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Credentials': 'true',
