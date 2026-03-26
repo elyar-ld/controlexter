@@ -272,7 +272,7 @@ export default {
         },
       }).then(response => {
         for (let cert of certificadosARegistrar) {
-          this.creaDocumento({ folio: cert.folio, cliente: cert.cliente, domicilio: cert.domicilio, localidad: cert.localidad, fecha: cert.fecha, tratamiento: cert.tratamiento, areas: cert.areas, short_url: cert.bitly });
+          this.creaDocumento({ hash: cert.hash, folio: cert.folio, cliente: cert.cliente, domicilio: cert.domicilio, localidad: cert.localidad, fecha: cert.fecha, tratamiento: cert.tratamiento, areas: cert.areas, short_url: cert.bitly });
         }
         console.log(response.data);
       }).catch(e => {
