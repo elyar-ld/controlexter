@@ -55,7 +55,7 @@ export default {
   },
   data() {
     return {
-      appVersion: '1.0.0',
+      appVersion: '1.0.1',
       res: '',
       folioInicial: "" as string,
       listaCerts: "",
@@ -272,7 +272,7 @@ export default {
         },
       }).then(response => {
         for (let cert of certificadosARegistrar) {
-          this.creaDocumento({ hash: cert.hash, folio: cert.folio, cliente: cert.cliente, domicilio: cert.domicilio, localidad: cert.localidad, fecha: cert.fecha, tratamiento: cert.tratamiento, areas: cert.areas, short_url: cert.bitly });
+          this.creaDocumento({ hash_verificacion: cert.hash, folio: cert.folio, cliente: cert.cliente, domicilio: cert.domicilio, localidad: cert.localidad, fecha: cert.fecha, tratamiento: cert.tratamiento, areas: cert.areas, short_url: cert.bitly });
         }
         console.log(response.data);
       }).catch(e => {
