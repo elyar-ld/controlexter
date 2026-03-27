@@ -55,7 +55,7 @@ export default {
   },
   data() {
     return {
-      appVersion: '1.0.1',
+      appVersion: '1.0.2',
       res: '',
       folioInicial: "" as string,
       listaCerts: "",
@@ -77,7 +77,7 @@ export default {
   },
   methods: {
     async creaDocumento(datos: any) {
-      const template = await fetch(baseURL.value + 'plantilla_certificado.docx?v=26032026').then(res => res.arrayBuffer());
+      const template = await fetch(baseURL.value + 'plantilla_certificado.docx?v=2603202602').then(res => res.arrayBuffer());
       let data = await this.generateQR(datos.short_url).then((value) => value);
       console.log(data);
       data = data.split(';base64,')[1];
@@ -549,10 +549,6 @@ input[type="text"], select, select[multiple], textarea{
   }
 
   header{display: block;}
-
-  .named-field label{
-    /* min-width: 190px; */
-  }
 }
 
 @media (prefers-color-scheme: dark) {
