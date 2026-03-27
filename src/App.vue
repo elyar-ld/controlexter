@@ -77,7 +77,7 @@ export default {
   },
   methods: {
     async creaDocumento(datos: any) {
-      const template = await fetch(baseURL.value + 'plantilla_certificado.docx').then(res => res.arrayBuffer());
+      const template = await fetch(baseURL.value + 'plantilla_certificado.docx?v=26032026').then(res => res.arrayBuffer());
       let data = await this.generateQR(datos.short_url).then((value) => value);
       console.log(data);
       data = data.split(';base64,')[1];
