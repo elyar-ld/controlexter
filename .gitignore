@@ -31,3 +31,6 @@ package-lock.json
 .scannerwork/
 sonar-project.properties
 sonar-scanner.js
+
+
+.todo

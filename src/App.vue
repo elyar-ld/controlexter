@@ -3,6 +3,8 @@ import { ref, onMounted } from 'vue';
 import Accordion from "./components/Accordion.vue";
 import AccordionItem from "./components/AccordionItem.vue";
 import CamposComunes from "./components/CamposComunes.vue";
+import CertificadosList from "./components/CertificadosList.vue";
+import CertificadoModal from "./components/CertificadoModal.vue";
 import axios from 'axios';
 import md5 from 'md5'
 
@@ -15,7 +17,6 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const baseURL = ref('');
 
 onMounted(() => {
-  // Accessing base URL from import.meta
   baseURL.value = import.meta.env.BASE_URL;
 });
 
@@ -33,12 +34,27 @@ interface Certificado {
   tratamiento: string;
 };
 
+interface CertificadoItem {
+  hash: string;
+  folio: string;
+  cliente?: string;
+  domicilio?: string;
+  localidad?: string;
+  fecha?: string;
+  tratamiento?: string;
+  areas?: string;
+  timestamp?: number;
+  bitly?: string;
+}
+
 export default {
   name: "App",
   components: {
     Accordion,
     AccordionItem,
-    CamposComunes
+    CamposComunes,
+    CertificadosList,
+    CertificadoModal,
   },
   mounted(){
     this.obtieneUltimoFolio();
@@ -55,7 +71,10 @@ export default {
   },
   data() {
     return {
-      appVersion: '1.0.2',
+      appVersion: '1.1.0',
+      // Navigation
+      activeTab: 'generador' as 'generador' | 'directorio',
+      // Generator section
       res: '',
       folioInicial: "" as string,
       listaCerts: "",
@@ -65,17 +84,19 @@ export default {
         domicilio: "",
         localidad: "",
         fecha: "",
-        /*tipoTratamiento: "",
-        productos: [],
-        dosis: "",*/
         areas: "",
       },
       color: "red",
       isGeneratingCerts: false,
       loading: false,
+      // CRUD modal
+      modalMode: 'create' as 'create' | 'edit' | 'duplicate',
+      modalData: {} as Partial<CertificadoItem>,
+      showModal: false,
     }
   },
   methods: {
+    // ─── GENERADOR ──────────────────────────────────────────────
     async creaDocumento(datos: any) {
       const template = await fetch(baseURL.value + 'plantilla_certificado.docx?v=2603202602').then(res => res.arrayBuffer());
       let data = await this.generateQR(datos.short_url).then((value) => value);
@@ -98,7 +119,6 @@ export default {
         `CERTIFICADO ${datos.folio} ${datos.cliente.slice(0, 50)}.docx`,
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
       );
-
     },
     saveDataToFile(data: BlobPart, fileName: string, mimeType: string) {
       const blob = new Blob([data], { type: mimeType });
@@ -125,14 +145,12 @@ export default {
     },
     obtieneInfoCerts() {
       if (this.listaCerts === "") return;
-      //let getUrl = apiBaseUrl + '/appscript/getdata';
       let getUrl = apiBaseUrl + '/api/certificados/getdata';
       let encodedData = JSON.stringify(this.prepararBusqueda(this.listaCerts));
       encodedData = encodeURIComponent(encodedData.replaceAll('\\"',''));
       const urlWithParams = getUrl + "?data=" + encodedData;
       console.log(urlWithParams);
       axios.get(urlWithParams, {
-        
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Credentials': 'true',
@@ -151,20 +169,15 @@ export default {
         console.log(e);
       })
     },
-
     prepararBusqueda(listaCerts: string) {
       listaCerts = listaCerts.replaceAll(" ", "");
-
       let commaSep = listaCerts.split(",");
-
       let resultado: string[] = [];
-
       for (let range of commaSep) {
         if (range.lastIndexOf("&") !== -1) {
           let inicio: number = parseInt(range.split("&")[0].split("-")[0]);
           let fin: number = parseInt(range.split("&")[1].split("-")[0]);
           let anio: string = range.split("&")[1].split("-")[1];
-
           for (inicio; inicio <= fin; inicio++) {
             resultado.push(`"${String(inicio).padStart(3, '0') + "-" + anio}"`);
           }
@@ -174,7 +187,6 @@ export default {
       }
       return resultado;
     },
-
     actualizaCamposComunes(campos: { campos: Array<keyof Certificado>; valores: any }) {
       if(campos.campos.includes('productos' )){
         campos.campos = campos.campos.concat(['tipoTratamiento','dosis','productosSelected']);
@@ -189,9 +201,7 @@ export default {
         }
       }
     },
-
     async generaCertificados() {
-      //Disable button
       this.isGeneratingCerts = true;
       this.loading = true;
 
@@ -211,29 +221,23 @@ export default {
         else
           dosises = cert.dosis.split(",").map(x => `, ${x}ml/L`);
 
-
         for (let i in cert.productos) {
           console.log(cert.productos);
           texto += `${cert.productos[i].producto}, ${cert.productos[i].registro}${dosises[i]}. `;
         }
 
-
         let timestamp = Date.now();
         let hash: string = md5(cert.folio + timestamp);
         
         const headers = {
-          //'Authorization': 'Bearer de88c0759fd25678a57979ae9fc2aa7165ed0614',
           "Access-Control-Allow-Origin": "*",
           "Content-Type": "application/json",
           'Access-Control-Allow-Credentials': true
         };
-        //const dataString = { "url": `https://extercontrol.github.io/wa/validador/index.html?hash=${hash}` };
         const dataString = { "url": `https://validador.extercontrol.com/?hash=${hash}` };
 
-        //let postUrl = apiBaseUrl + '/appscript/shorturl';
         let postUrl = apiBaseUrl + '/api/certificados/shorturl';
         await axios.post(postUrl, dataString, {
-          
           headers: {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Credentials': 'true',
@@ -257,14 +261,11 @@ export default {
         }).catch(e => {
           console.log(e);
         })
-        
       }
       console.log(JSON.stringify(certificadosARegistrar));
 
-      //let postUrl = apiBaseUrl + '/appscript/submitdata';
       let postUrl = apiBaseUrl + '/api/certificados';
       axios.post(postUrl, certificadosARegistrar, {
-        
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Credentials': 'true',
@@ -279,22 +280,18 @@ export default {
         console.log(e);
       })
 
-      //Returns button to enabled
       this.isGeneratingCerts = false;
       this.loading = false;
     },
     async generateQR(url: string) {
       const qrCode = qrCodeF(url);
-
       const reader = new FileReader();
       const blobQr = await qrCode.getRawData().then((value) => value);
-
       return new Promise<string>((resolve, reject) => {
         reader.onerror = () => {
           reader.abort();
           reject(new DOMException("Problem parsing input file."));
         };
-
         reader.onload = () => {
           resolve(reader.result as string);
         };
@@ -302,10 +299,8 @@ export default {
       });
     },
     obtieneUltimoFolio() {
-      //let getUrl = apiBaseUrl + '/appscript/getlast';
       let getUrl = apiBaseUrl + '/api/certificados/last/record';
       axios.get(getUrl, {
-        
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Credentials': 'true',
@@ -330,26 +325,51 @@ export default {
       if (this.hayCambiosSinGuardar) {
         const confirmar = confirm("Tienes cambios sin guardar. ¿Estás seguro de que deseas salir y perderlos?");
         if (!confirmar) {
-          // Volvemos a empujar el estado para seguir atrapando el botón "Atrás"
           history.pushState(null, '', location.href);
         } else {
-          // Lo dejamos salir simulando otro back que lo sacará de la app
           history.back();
         }
       } else {
-        // No hay cambios, lo dejamos salir
         history.back();
       }
+    },
+
+    // ─── CRUD MODAL ──────────────────────────────────────────────
+    abrirModalNuevo() {
+      this.modalMode = 'create';
+      this.modalData = {};
+      this.showModal = true;
+    },
+    abrirModalEditar(cert: CertificadoItem) {
+      this.modalMode = 'edit';
+      this.modalData = { ...cert };
+      this.showModal = true;
+    },
+    abrirModalDuplicar(cert: CertificadoItem) {
+      this.modalMode = 'duplicate';
+      this.modalData = { ...cert };
+      this.showModal = true;
+    },
+    cerrarModal() {
+      this.showModal = false;
+      this.modalData = {};
+    },
+    onModalSaved() {
+      this.showModal = false;
+      this.modalData = {};
+      // Refresh the list
+      const list = this.$refs.certsList as any;
+      if (list) list.refresh();
     },
   },
   computed: {
     spanStyle() {
       return {
         color: this.color,
-        // Add more style properties as needed
       };
     },
     hayCambiosSinGuardar(): boolean {
+      if (this.activeTab === 'directorio') return false;
       if (this.listaCerts && this.listaCerts.trim() !== '') return true;
       if (this.dataCerts && this.dataCerts.length > 0) return true;
       if (this.dataCamposComunes.cliente.trim() !== '' || 
@@ -367,63 +387,112 @@ export default {
 
 <template>
   <header>
-    <img src="./assets/controlExter_logo.svg" alt="" id="logo">
+    <img src="./assets/controlExter_logo.svg" alt="Control Exter Logo" id="logo">
     <div class="header-titles">
-      <h1>Generador de Certificados <span :style="spanStyle">⬤</span></h1>
+      <h1>Control Exter <span :style="spanStyle">⬤</span></h1>
       <span class="app-version">v. {{ appVersion }}</span>
     </div>
   </header>
 
-  <fieldset id="buscador-fields">
-    <div class="named-field">
-      <label for="buscador">Generar a partir de:</label>
-      <input type="text" placeholder="Usa / como rango y , como separador" id="buscador" name="buscador" v-model="listaCerts">
+  <!-- Tab Navigation -->
+  <nav class="tab-nav" role="tablist">
+    <button
+      id="tab-generador"
+      role="tab"
+      class="tab-btn"
+      :class="{ 'tab-active': activeTab === 'generador' }"
+      @click="activeTab = 'generador'"
+      :aria-selected="activeTab === 'generador'"
+    >
+      <span class="mdi mdi-file-sign"></span>
+      Generador
+    </button>
+    <button
+      id="tab-directorio"
+      role="tab"
+      class="tab-btn"
+      :class="{ 'tab-active': activeTab === 'directorio' }"
+      @click="activeTab = 'directorio'"
+      :aria-selected="activeTab === 'directorio'"
+    >
+      <span class="mdi mdi-archive-search"></span>
+      Directorio
+    </button>
+  </nav>
+
+  <!-- ── GENERADOR TAB ── -->
+  <div v-show="activeTab === 'generador'" class="tab-content" role="tabpanel" aria-labelledby="tab-generador">
+    <fieldset id="buscador-fields">
+      <div class="named-field">
+        <label for="buscador">Generar a partir de:</label>
+        <input type="text" placeholder="Usa / como rango y , como separador" id="buscador" name="buscador" v-model="listaCerts">
+      </div>
+      <div class="named-field">
+        <label for="folio_inicial">Folio inicial: </label>
+        <input type="text" placeholder="nnn-AAAA" id="folio_inicial" name="folio_inicial" v-model="folioInicial">
+      </div>
+      <button type="submit" @click="obtieneInfoCerts"><span class="mdi mdi-magnify"></span> Buscar</button>
+    </fieldset>
+
+    <div>
+      <Accordion>
+        <CamposComunes @camposSeleccionadosChanged="actualizaCamposComunes" :cliente="dataCamposComunes.cliente"
+          :domicilio="dataCamposComunes.domicilio" :localidad="dataCamposComunes.localidad"
+          :fecha="dataCamposComunes.fecha" :areas="dataCamposComunes.areas">
+        </CamposComunes>
+      </Accordion>
     </div>
-    <div class="named-field">
-      <label for="folio_inicial">Folio inicial: </label>
-      <input type="text" placeholder="nnn-AAAA" id="folio_inicial" name="folio_inicial" v-model="folioInicial">
+
+    <div>
+      <Accordion>
+        <AccordionItem v-for="(certificado, index) in dataCerts" 
+          :folio="obtieneFolio(index)" @update:folio="certificado.folio = $event" 
+          :cliente="certificado.cliente" @update:cliente="certificado.cliente = $event" 
+          :domicilio="certificado.domicilio" @update:domicilio="certificado.domicilio = $event" 
+          :localidad="certificado.localidad" @update:localidad="certificado.localidad = $event" 
+          :fecha="certificado.fecha" @update:fecha="certificado.fecha = $event" 
+          :tipoTratamiento="certificado.tipoTratamiento" @change:tipoTratamiento="certificado.tipoTratamiento = $event" 
+          :productos="certificado.productos" @update:productos="certificado.productos = $event" 
+          :productosSelected="certificado.productosSelected" @change:productosSelected="certificado.productosSelected = $event" 
+          :dosis="certificado.dosis" @update:dosis="certificado.dosis = $event" 
+          :areas="certificado.areas" @update:areas="certificado.areas = $event"
+          @productosSeleccionadosChanged="certificado.productos = $event"
+          :indice="index">
+        </AccordionItem>
+      </Accordion>
     </div>
-    <button type="submit" @click="obtieneInfoCerts"><span class="mdi mdi-magnify"></span> Buscar</button>
-  </fieldset>
-  <div>
-    <Accordion>
-      <CamposComunes @camposSeleccionadosChanged="actualizaCamposComunes" :cliente="dataCamposComunes.cliente"
-        :domicilio="dataCamposComunes.domicilio" :localidad="dataCamposComunes.localidad"
-        :fecha="dataCamposComunes.fecha" :areas="dataCamposComunes.areas">
-      </CamposComunes>
-    </Accordion>
+
+    <button id="boton-generar" @click="generaCertificados" type="submit" v-bind:disabled="isGeneratingCerts">
+      <span class="mdi mdi-file-sign"></span> Generar
+    </button>
   </div>
 
-  <div>
-    <Accordion>
-      <AccordionItem v-for="(certificado, index) in dataCerts" 
-        :folio="obtieneFolio(index)" @update:folio="certificado.folio = $event" 
-        :cliente="certificado.cliente" @update:cliente="certificado.cliente = $event" 
-        :domicilio="certificado.domicilio" @update:domicilio="certificado.domicilio = $event" 
-        :localidad="certificado.localidad" @update:localidad="certificado.localidad = $event" 
-        :fecha="certificado.fecha" @update:fecha="certificado.fecha = $event" 
-        :tipoTratamiento="certificado.tipoTratamiento" @change:tipoTratamiento="certificado.tipoTratamiento = $event" 
-        :productos="certificado.productos" @update:productos="certificado.productos = $event" 
-        :productosSelected="certificado.productosSelected" @change:productosSelected="certificado.productosSelected = $event" 
-        :dosis="certificado.dosis" @update:dosis="certificado.dosis = $event" 
-        :areas="certificado.areas" @update:areas="certificado.areas = $event"
-        @productosSeleccionadosChanged="certificado.productos = $event"
-        :indice="index">
-      </AccordionItem>
-    </Accordion>
+  <!-- ── DIRECTORIO TAB ── -->
+  <div v-show="activeTab === 'directorio'" class="tab-content" role="tabpanel" aria-labelledby="tab-directorio">
+    <CertificadosList
+      ref="certsList"
+      @editar="abrirModalEditar"
+      @duplicar="abrirModalDuplicar"
+      @nuevo="abrirModalNuevo"
+    />
   </div>
 
-  <button id="boton-generar" @click="generaCertificados" type="submit" v-bind:disabled="isGeneratingCerts"><span
-      class="mdi mdi-file-sign"></span> Generar</button>
-  
-  <!-- Loading popup -->
+  <!-- Loading popup (Generador) -->
   <div v-if="loading" class="loading-popup">
-        <div class="loading-content">
-            <img src="./assets/bee.gif" alt="Loading">
-            <p>Generando...</p>
-        </div>
+    <div class="loading-content">
+      <img src="./assets/bee.gif" alt="Loading">
+      <p>Generando...</p>
     </div>
+  </div>
 
+  <!-- CRUD Modal -->
+  <CertificadoModal
+    v-if="showModal"
+    :mode="modalMode"
+    :initial-data="modalData"
+    @close="cerrarModal"
+    @saved="onModalSaved"
+  />
 </template>
 
 <style>
@@ -433,7 +502,8 @@ header{
   padding: 0;
   display: flex;
   justify-content: space-between;
-  margin-bottom: 50px;
+  align-items: center;
+  margin-bottom: 28px;
 }
 
 .header-titles {
@@ -446,8 +516,54 @@ header{
   opacity: 0.7;
 }
 
-#logo{margin: 0;}
+h1 {
+  font-size: 1.6rem;
+  margin: 0 0 2px;
+  line-height: 1.2;
+}
 
+#logo { margin: 0; width: 200px; }
+
+/* Tab Navigation */
+.tab-nav {
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 28px;
+}
+
+.tab-btn {
+  padding: 10px 22px;
+  border: none;
+  background: transparent;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #888;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.tab-btn:hover {
+  color: #27b100;
+  border-color: transparent;
+}
+
+.tab-btn.tab-active {
+  color: #27b100;
+  border-bottom-color: #27b100;
+}
+
+.tab-content {
+  min-height: 200px;
+}
+
+/* ── Generador styles ── */
 label {
   padding-right: 5px;
 }
@@ -474,7 +590,6 @@ label {
   transition: 0.4s;
 }
 
-.active,
 .Accordion:hover {
   background-color: #ccc;
 }
@@ -486,31 +601,26 @@ label {
   overflow: hidden;
 }
 
-#logo {
-  width: 250px;
+.loading-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
 }
 
-.loading-popup {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(255, 255, 255, 0.7); /* Semi-transparent background */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 999; /* Ensure the loading popup is on top of other elements */
-    }
-
-    .loading-content {
-        text-align: center;
-        color: #005512;
-        font-weight: 800;
-    }
+.loading-content {
+  text-align: center;
+  color: #005512;
+  font-weight: 800;
+}
 
 #boton-generar {
-
   margin-top: 10px;
 }
 
@@ -520,7 +630,11 @@ input[type="text"], select, select[multiple], textarea{
 
 @media (max-width:767px) {
   #logo {
-    width: 70%;
+    width: 55%;
+  }
+
+  h1 {
+    font-size: 1.15rem;
   }
 
   #buscador, #folio_inicial{
@@ -548,7 +662,12 @@ input[type="text"], select, select[multiple], textarea{
     align-items: baseline;
   }
 
-  header{display: block;}
+  header{ display: block; }
+
+  .tab-btn {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -556,6 +675,19 @@ input[type="text"], select, select[multiple], textarea{
     background-color: #181818;
     color: white;
   }
-  h1{color:white}
+  h1 { color: white; }
+  .tab-nav {
+    border-color: #333;
+  }
+  .tab-btn {
+    color: #777;
+  }
+  .tab-btn.tab-active {
+    color: #6dda40;
+    border-bottom-color: #6dda40;
+  }
+  .tab-btn:hover:not(.tab-active) {
+    color: #6dda40;
+  }
 }
 </style>
