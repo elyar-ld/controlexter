@@ -180,6 +180,7 @@
 
 <script lang="ts">
 import axios from 'axios';
+import { showToast, extractApiError } from '../utils/toast';
 
 interface CertificadoItem {
   hash: string;
@@ -257,6 +258,8 @@ export default {
         this.totalRecords = data.total ?? this.certificados.length;
       } catch (e) {
         console.error(e);
+        const { message, details } = extractApiError(e);
+        showToast(`Error al cargar certificados: ${message}`, details, 'error');
         this.certificados = [];
         this.totalRecords = 0;
       } finally {
@@ -278,6 +281,8 @@ export default {
           this.totalRecords = 0;
         } else {
           console.error(e);
+          const { message, details } = extractApiError(e);
+          showToast(`Error al buscar folio ${this.filters.folio}: ${message}`, details, 'error');
         }
       } finally {
         this.loading = false;
@@ -317,7 +322,8 @@ export default {
         await this.cargar();
       } catch (e) {
         console.error(e);
-        alert('Error al eliminar el certificado. Intenta de nuevo.');
+        const { message, details } = extractApiError(e);
+        showToast(`Error al eliminar el certificado: ${message}`, details, 'error');
       } finally {
         this.eliminando = false;
       }

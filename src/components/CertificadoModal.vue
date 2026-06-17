@@ -87,6 +87,7 @@
 
 <script lang="ts">
 import axios from 'axios';
+import { showToast, extractApiError } from '../utils/toast';
 
 interface CertificadoForm {
   hash: string;
@@ -248,15 +249,10 @@ export default {
         }
         this.$emit('saved');
       } catch (e: any) {
-        const status = e?.response?.status;
-        if (status === 400) {
-          this.errorMsg = 'Datos inválidos. Verifica los campos e intenta nuevamente.';
-        } else if (status === 404) {
-          this.errorMsg = 'Certificado no encontrado.';
-        } else {
-          this.errorMsg = 'Error al guardar. Intenta de nuevo.';
-        }
         console.error(e);
+        const { message, details } = extractApiError(e);
+        this.errorMsg = message;
+        showToast(`Error al guardar: ${message}`, details, 'error');
       } finally {
         this.saving = false;
       }

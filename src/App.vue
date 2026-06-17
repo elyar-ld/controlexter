@@ -5,8 +5,10 @@ import AccordionItem from "./components/AccordionItem.vue";
 import CamposComunes from "./components/CamposComunes.vue";
 import CertificadosList from "./components/CertificadosList.vue";
 import CertificadoModal from "./components/CertificadoModal.vue";
+import ToastContainer from "./components/ToastContainer.vue";
 import axios from 'axios';
-import md5 from 'md5'
+import md5 from 'md5';
+import { showToast, extractApiError } from './utils/toast';
 
 import { qrCodeF } from "./models/qrcodestyling_model";
 // @ts-ignore
@@ -55,6 +57,7 @@ export default {
     CamposComunes,
     CertificadosList,
     CertificadoModal,
+    ToastContainer,
   },
   mounted(){
     this.obtieneUltimoFolio();
@@ -166,7 +169,9 @@ export default {
           cert['dosis'] = "" as string;
         }
       }).catch(e => {
-        console.log(e);
+        console.error(e);
+        const { message, details } = extractApiError(e);
+        showToast(`Error al obtener información de certificados: ${message}`, details, 'error');
       })
     },
     prepararBusqueda(listaCerts: string) {
@@ -259,7 +264,9 @@ export default {
           });
           console.log(response.data.data.tiny_url)
         }).catch(e => {
-          console.log(e);
+          console.error(e);
+          const { message, details } = extractApiError(e);
+          showToast(`Error al generar enlace corto para el folio ${cert.folio}: ${message}`, details, 'error');
         })
       }
       console.log(JSON.stringify(certificadosARegistrar));
@@ -277,7 +284,9 @@ export default {
         }
         console.log(response.data);
       }).catch(e => {
-        console.log(e);
+        console.error(e);
+        const { message, details } = extractApiError(e);
+        showToast(`Error al registrar certificados: ${message}`, details, 'error');
       })
 
       this.isGeneratingCerts = false;
@@ -312,7 +321,9 @@ export default {
         this.folioInicial = `${String(parseInt(folioInicialArr[0])+1).padStart(3, '0')}-${folioInicialArr[1]}`;
         this.color = "green";
       }).catch(e => {
-        console.log(e);
+        console.error(e);
+        const { message, details } = extractApiError(e);
+        showToast(`Error al obtener el último folio: ${message}`, details, 'error');
       })
     },
     handleBeforeUnload(event: BeforeUnloadEvent) {
@@ -493,6 +504,9 @@ export default {
     @close="cerrarModal"
     @saved="onModalSaved"
   />
+
+  <!-- Global Toast Notifications -->
+  <ToastContainer />
 </template>
 
 <style>
